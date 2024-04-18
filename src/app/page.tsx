@@ -1,95 +1,76 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+"use client"
 
-export default function Home() {
-  return (
-    <main className={styles.main}>
-      <div className={styles.description}>
-        <p>
-          Get started by editing&nbsp;
-          <code className={styles.code}>src/app/page.tsx</code>
-        </p>
-        <div>
-          <a
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className={styles.vercelLogo}
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
-      </div>
+import { useState, useEffect } from "react"
+// import NavBar from "../components/NavBar"
+import classes from "./page.module.css"
+import Link from "next/link"
+import Image from "next/image"
+import { Doctor, Patient, User } from "@/Models/Users"
 
-      <div className={styles.center}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
+// Dummy user lists
+const doctors = [
+	new Doctor(1, "Alex", "Chen", "Cardiology"),
+	new Doctor(2, "David", "Zhou", "Pediatrics"),
+	new Doctor(3, "Lucia", "Kim", "Orthodonist"),
+]
 
-      <div className={styles.grid}>
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Docs <span>-&gt;</span>
-          </h2>
-          <p>Find in-depth information about Next.js features and API.</p>
-        </a>
+const patients = [
+	new Patient(4, "Herman", "Vuong", 21),
+	new Patient(5, "Will", "Smith", 30),
+	new Patient(6, "Tiare", "Mar", 25),
+]
 
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Learn <span>-&gt;</span>
-          </h2>
-          <p>Learn about Next.js in an interactive course with&nbsp;quizzes!</p>
-        </a>
+const doctorUser = new Doctor(7, "Doctor", "White", "Neurology")
+const patientUser = new Patient(8, "Patient", "Brown", 23)
 
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Templates <span>-&gt;</span>
-          </h2>
-          <p>Explore starter templates for Next.js.</p>
-        </a>
+function MessageDirectoryPage() {
+	const [userList, setUserList] = useState<User[]>([])
+	const [currentUser, setCurrentUser] = useState<User>(doctorUser)
 
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Deploy <span>-&gt;</span>
-          </h2>
-          <p>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
-  );
+	useEffect(() => {
+		if (currentUser instanceof Doctor) {
+			setUserList(patients)
+		} else {
+			setUserList(doctors)
+		}
+	}, [currentUser])
+
+	const toggleUser = () => {
+		setCurrentUser(currentUser instanceof Doctor ? patientUser : doctorUser)
+	}
+
+	return (
+		<div className={classes["page-container"]}>
+			<div className={classes["body"]}>
+				<h1 className={classes["header"]}>Messages List</h1>
+				<button onClick={toggleUser} className={classes["toggle-button"]}>
+					{currentUser instanceof Doctor ? "I am a Patient" : "I am a Doctor"}
+				</button>
+				<div className={classes["search-results"]}>
+					{userList.map((user) => (
+						<div className={classes["search-item"]} key={user.userId}>
+							<div className={classes["search-img-container"]}>
+								<Image
+									src="/user.jpg"
+									alt="User Profile"
+									layout="fill"
+									className={classes["search-img"]}
+								/>
+							</div>
+							<div className={classes["search-text-container"]}>
+								<p>{user.getFullName()}</p>
+								{user instanceof Patient && <p>{user.age} year(s) old</p>}
+								{user instanceof Doctor && <p>Specialty: {user.specialty}</p>}
+							</div>
+							<Link href={`/chat`}>
+								<p className={classes["message-button"]}>Message</p>
+							</Link>
+						</div>
+					))}
+				</div>
+			</div>
+		</div>
+	)
 }
+
+export default MessageDirectoryPage
