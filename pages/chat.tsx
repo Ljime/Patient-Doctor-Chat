@@ -1,31 +1,59 @@
 "use client"
-import React, { useState } from "react"
+import React, { useEffect, useState } from "react"
 import styles from "./chat.module.css"
-import { ChatHistory, Message } from "@/Models/Messages"
+import { ChatHistory } from "@/Models/Messages"
 import { Doctor, Patient, User } from "@/Models/Users"
 import Link from "next/link"
+import { useRouter } from "next/router"
+import { getUserById } from "@/Models/UserData"
 
 function Chat() {
-	const doctor = new Doctor(7, "Doctor", "", "Neurology")
-	const patient = new Patient(8, "Patient", "", 23)
+	const router = useRouter()
+	const { senderId, receiverId } = router.query
 
-	const [chatHistory, setChatHistory] = useState(
-		new ChatHistory(patient, doctor)
-	)
+	const [chatHistory, setChatHistory] = useState<ChatHistory>()
 	const [newMessage, setNewMessage] = useState("")
-	const [currentUser, setCurrentUser] = useState<User>(doctor) // initially set to doctor
+	const [sender, setSender] = useState<User>()
+	const [receiver, setReceiver] = useState<User>()
+
+	useEffect(() => {
+		if (
+			senderId &&
+			receiverId &&
+			typeof senderId === "string" &&
+			typeof receiverId === "string"
+		) {
+			const sender = getUserById(parseInt(senderId))
+			const receiver = getUserById(parseInt(receiverId))
+
+			if (!(sender instanceof User) || !(receiver instanceof User)) {
+				return
+			}
+
+			if (sender instanceof Doctor && receiver instanceof Patient) {
+				setChatHistory(new ChatHistory(receiver, sender))
+			} else if (sender instanceof Patient && receiver instanceof Doctor) {
+				setChatHistory(new ChatHistory(sender, receiver))
+			}
+
+			setSender(sender)
+			setReceiver(receiver)
+		}
+	}, [senderId, receiverId])
 
 	const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
 		event.preventDefault()
-		if (newMessage.trim() !== "") {
-			chatHistory.addMessage(currentUser, newMessage)
+		if (newMessage.trim() !== "" && chatHistory && sender) {
+			chatHistory.addMessage(sender, newMessage)
 			setChatHistory(chatHistory)
 			setNewMessage("")
 		}
 	}
 
 	const toggleUser = () => {
-		setCurrentUser(currentUser instanceof Doctor ? patient : doctor)
+		const tempReceiver = receiver
+		setReceiver(sender)
+		setSender(tempReceiver)
 	}
 
 	return (
@@ -38,16 +66,11 @@ function Chat() {
 			<div className={styles["header"]}>
 				<h2 className={styles["title"]}>Chat History</h2>
 				<button onClick={toggleUser} className={styles["send-button"]}>
-					{currentUser instanceof Doctor ? "I am a Patient" : "I am a Doctor"}
+					{sender instanceof Doctor ? "I am a Patient" : "I am a Doctor"}
 				</button>
 			</div>
 			<form className={styles["new-message-form"]} onSubmit={handleSubmit}>
-				<p>
-					Speaking to:{" "}
-					{currentUser instanceof Doctor
-						? patient.getFullName()
-						: doctor.getFullName()}
-				</p>
+				<p>Speaking to: {receiver?.getFullName()}</p>
 				<div>
 					<input
 						type="text"
@@ -65,19 +88,20 @@ function Chat() {
 			</form>
 
 			<div className={styles["chat-history"]}>
-				{[...chatHistory.messages].reverse().map((msg, index) => (
-					<div
-						key={index}
-						className={
-							msg.sender instanceof Patient
-								? styles["patient-comment"]
-								: styles["doctor-comment"]
-						}
-					>
-						<p>{msg.sender.getFullName()} says:</p>
-						<p>{msg.message}</p>
-					</div>
-				))}
+				{chatHistory &&
+					[...chatHistory.messages].reverse().map((msg, index) => (
+						<div
+							key={index}
+							className={
+								msg.sender instanceof Patient
+									? styles["patient-comment"]
+									: styles["doctor-comment"]
+							}
+						>
+							<p>{msg.sender.getFullName()} says:</p>
+							<p>{msg.message}</p>
+						</div>
+					))}
 			</div>
 		</div>
 	)
